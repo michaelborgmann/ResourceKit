@@ -109,6 +109,46 @@ try player.play()
 try player.play(fromSeconds: 0.0, toSeconds: 0.25, loops: .times(2))
 ```
 
+#### 🔹 Observe playback state in SwiftUI
+
+You can use `onPlaybackStateChange` to bind playback state to your SwiftUI views:
+
+```
+@MainActor
+@Observable
+final class AudioPlayerViewModel {
+    
+    let player = AudioResourcePlayer()
+    var isPlaying: Bool = false
+    
+    init(audioFile: String) {
+        try? player.load(named: audioFile, ext: "mp3")
+        
+        player.onPlaybackStateChange = { [weak self] playing in
+            self?.isPlaying = playing
+        }
+    }
+    
+    func toggle() {
+        player.isPlaying ? player.stop() : try? player.play()
+    }
+}
+
+struct AudioPlayerView: View {
+    
+    @State private var viewModel: AudioPlayerViewModel
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(viewModel.isPlaying ? "Playing…" : "Stopped")
+            Button(viewModel.isPlaying ? "Stop" : "Play") {
+                viewModel.toggle()
+            }
+        }
+    }
+}
+```
+
 > Notes:
 >
 > * The API is `@MainActor`, making it safe for UI use.

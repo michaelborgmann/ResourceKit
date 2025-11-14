@@ -185,4 +185,27 @@ struct AudioResourcePlayerTests {
         p.volume = 2
         #expect(p.volume == 1)
     }
+    
+    // MARK: - Player Callback
+    
+    @Test @MainActor
+    func onPlaybackStateChange_called_correctly() throws {
+        let p = try makeLoadedPlayer()
+        var states: [Bool] = []
+        p.onPlaybackStateChange = { states.append($0) }
+        
+        try p.play()
+        spinRunloop(0.05)
+        #expect(states.last == true)
+        
+        p.pause()
+        #expect(states.last == false)
+        
+        try p.play()
+        spinRunloop(0.05)
+        #expect(states.last == true)
+        
+        p.stop()
+        #expect(states.last == false)
+    }
 }

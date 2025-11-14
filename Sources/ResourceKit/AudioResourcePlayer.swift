@@ -88,7 +88,7 @@ public final class AudioResourcePlayer {
     /// Remaining time in the current segment when paused (nil if not paused mid-loop).
     private var pausedRemaining: TimeInterval?
     
-    /// Looping modes for segment playback.
+    /// Looping modes for segment playback. Controls how many times the segment is repeated.
     public enum Looping: Equatable {
         
         /// Play the segment once (no extra loops).
@@ -102,6 +102,13 @@ public final class AudioResourcePlayer {
     }
     
     // MARK: - Public Properties
+    
+    /// Callback invoked whenever the playback state changes.
+    ///
+    /// - Parameter isPlaying: `true` if playback started or resumed, `false` if paused or stopped.
+    /// - Note: This is triggered for both whole-file and segment playback.
+    ///         Segment playback may call this multiple times for loop restarts.
+    public var onPlaybackStateChange: ((Bool) -> Void)?
     
     /// Indicates whether the audio player is currently playing.
     public var isPlaying: Bool {
@@ -179,6 +186,7 @@ public final class AudioResourcePlayer {
     ///   - If a timed segment was previously active *and paused mid-segment*, this resumes it
     ///     for the remaining duration.
     ///   - Otherwise it plays the whole file, honoring ``numberOfLoops``.
+    ///   - **Triggers `onPlaybackStateChange` with `true` when playback starts.**
     ///
     /// - Throws:
     ///   - ``AudioResourcePlayerError/notLoaded`` if no file has been loaded.
@@ -198,9 +206,14 @@ public final class AudioResourcePlayer {
             isSegmentLooping = false
             guard player.play() else { throw AudioResourcePlayerError.playFailed }
         }
+        
+        onPlaybackStateChange?(true)
     }
     
     /// Pauses playback, keeping the current position.
+    ///
+    /// - Important:
+    ///   - **Triggers `onPlaybackStateChange` with `false` when playback pauses.**
     ///
     /// - Note: If a segment is looping, the remaining time for the current cycle
     ///         is captured so that `play()` can resume the segment accurately.
@@ -216,16 +229,21 @@ public final class AudioResourcePlayer {
         
         player.pause()
         cancelTimer()
+        onPlaybackStateChange?(false)
     }
     
     /// Stops playback and resets state.
     ///
     /// Cancels any active segment timer and clears segment state.
+    ///
+    /// - Important:
+    ///   - **Triggers `onPlaybackStateChange` with `false` when playback stops.**
     public func stop() {
         player?.stop()
         cancelTimer()
         isSegmentLooping = false
         pausedRemaining = nil
+        onPlaybackStateChange?(false)
     }
     
     // MARK: - Segment Playback
@@ -329,6 +347,8 @@ public final class AudioResourcePlayer {
     ///   the method restarts the audio segment from `segmentStart`, prepares the player,
     ///   and reschedules the next timer.
     /// - Otherwise, it stops playback and clears looping state.
+    /// - Calls `onPlaybackStateChange` whenever the playback state changes
+    ///   (true when segment restarts, false when segment ends).
     ///
     /// > Important:
     /// This method is always invoked on the **main run loop**, matching `@MainActor` isolation.
@@ -349,10 +369,18 @@ public final class AudioResourcePlayer {
             // Advance anchor one full length; schedule next on anchor (prevents drift)
             self.segmentAnchorWallTime += self.segmentLength
             self.startSegmentTimer(fireAfter: self.segmentLength)
+            
+            // Only notify if playback state actually changed
+            if !player.isPlaying {
+                onPlaybackStateChange?(true)
+            }
+            
         } else {
             player.stop()
             self.isSegmentLooping = false
             self.stopTimer = nil
+            
+            onPlaybackStateChange?(false)
         }
     }
     
