@@ -60,7 +60,7 @@ import AVFoundation
 /// `AudioResourcePlayer` is designed for apps that need **simple, predictable, and safe**
 /// audio playback without the complexity of `AVAudioEngine`.
 @MainActor
-public final class AudioResourcePlayer {
+public final class AudioResourcePlayer: NSObject {
     
     // MARK: - Private Properties
 
@@ -109,6 +109,14 @@ public final class AudioResourcePlayer {
     /// - Note: This is triggered for both whole-file and segment playback.
     ///         Segment playback may call this multiple times for loop restarts.
     public var onPlaybackStateChange: ((Bool) -> Void)?
+
+    /// Callback invoked when playback finishes naturally.
+    ///
+    /// - Note:
+    ///   - Triggered only when the audio finishes playing to the end (whole-file playback).
+    ///   - **Not called for segment playback**; segment loops are managed by internal timers and do not fire this callback.
+    ///   - Useful for auto-advancing to the next verse or updating UI when playback completes.
+    public var onPlaybackFinished: (() -> Void)?
     
     /// Indicates whether the audio player is currently playing.
     public var isPlaying: Bool {
@@ -137,7 +145,7 @@ public final class AudioResourcePlayer {
     // MARK: - Initialization & Lifecycle
 
     /// Creates a new instance of `AudioResourcePlayer`.
-    public init() {}
+    public override init() {}
     
     /// Cleans up resources on deallocation.
     ///
@@ -173,6 +181,7 @@ public final class AudioResourcePlayer {
             throw AudioResourcePlayerError.decodeFailed(underlying: error)
         }
         
+        newPlayer.delegate = self
         newPlayer.prepareToPlay()
         newPlayer.numberOfLoops = numberOfLoops // honor current setting
         player = newPlayer
@@ -388,5 +397,22 @@ public final class AudioResourcePlayer {
     private func cancelTimer() {
         stopTimer?.invalidate()
         stopTimer = nil
+    }
+}
+
+// MARK: - AVAudioPlayerDelegate
+
+extension AudioResourcePlayer: AVAudioPlayerDelegate {
+    
+    /// Called by the system when `AVAudioPlayer` finishes playing a file.
+    ///
+    /// - Parameters:
+    ///   - player: The `AVAudioPlayer` instance that finished playback.
+    ///   - flag: `true` if playback reached the end successfully, `false` if interrupted or failed.
+    /// - Note: This method triggers both `onPlaybackStateChange(false)` and `onPlaybackFinished?()`,
+    ///         allowing UI and consumers to respond to playback completion.
+    public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        onPlaybackStateChange?(false)
+        onPlaybackFinished?()
     }
 }

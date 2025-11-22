@@ -208,4 +208,21 @@ struct AudioResourcePlayerTests {
         p.stop()
         #expect(states.last == false)
     }
+    
+    @Test @MainActor
+    func onPlaybackFinished_called_whenFileCompletes() throws {
+        ensureAudioSessionActive()
+        
+        let p = try makeLoadedPlayer(name: "beep", ext: "mp3", bundle: .module)
+        var didFinish = false
+        p.onPlaybackFinished = { didFinish = true }
+        
+        try p.play()
+        
+        // Spin the runloop for slightly longer than the asset duration
+        let duration = try assetDuration(name: "beep", ext: "mp3")
+        spinRunloop(duration + 0.1)
+        
+        #expect(didFinish)
+    }
 }

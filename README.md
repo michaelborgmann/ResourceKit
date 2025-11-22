@@ -155,6 +155,21 @@ struct AudioPlayerView: View {
 > * Segment playback is drift-free via anchored timers.
 > * This is for **local** files; streaming is out of scope.
 
+#### 🔹 Observe playback finished
+
+Use `onPlaybackFinished` to run a callback when a whole-file playback ends naturally:
+
+```swift
+player.onPlaybackFinished = {
+    print("Audio finished playing — move to next track or update UI")
+}
+````
+
+> Note:
+>
+> * Triggered only when the audio finishes naturally (whole-file playback).
+> * Not called for segment playback; timers handle segment loops separately.
+
 ---
 
 ## 🧩 Requirements
