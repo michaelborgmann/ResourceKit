@@ -20,6 +20,7 @@ Built for modern Swift apps, documented with DocC, and fully tested with Swift T
 * ✅ Fully documented using DocC
 * ✅ Tested using Swift's native [`import Testing`](https://developer.apple.com/documentation/swift/testing) framework
 * ✅ Designed to be extensible for additional resource types (audio, images, etc.)
+* ✅ Normalized resource indexing via `ResourceIndex`
 
 ---
 
@@ -28,7 +29,7 @@ Built for modern Swift apps, documented with DocC, and fully tested with Swift T
 Add **ResourceKit** via Swift Package Manager:
 
 ```swift
-.package(url: "https://github.com/michaelborgmann/ResourceKit.git", from: "0.2.0")
+.package(url: "https://github.com/michaelborgmann/ResourceKit.git", from: "0.3.0")
 ````
 
 Then import it into your code:
@@ -169,6 +170,75 @@ player.onPlaybackFinished = {
 >
 > * Triggered only when the audio finishes naturally (whole-file playback).
 > * Not called for segment playback; timers handle segment loops separately.
+
+---
+
+### 🔹 ResourceIndex (lightweight resource index)
+
+A small JSON index file that lists the resources in a collection, designed for previews and lists.
+
+#### Example `index.json`
+
+```json
+{
+  "schema": 1,
+  "title": "Example Content Set",
+  "setId": "example-set",
+  "version": "0.1.0",
+  "items": [
+    {
+      "id": "item-001",
+      "order": 1,
+      "payload": {
+        "title": "Getting Started",
+        "difficulty": 1
+      },
+      "target": { "kind": "resource", "ref": "resources/item-001" }
+    }
+  ]
+}
+```
+
+#### Load the index
+
+```swift
+let index = try ResourceIndex.load(fileName: "index")
+```
+
+#### Using custom payloads
+
+`payload` is stored as `JSONValue` so each project can define its own lightweight preview metadata.
+
+**Define a payload model:**
+
+```swift
+struct ExamplePayload: Codable {
+    let title: String
+    let difficulty: Int?
+}
+```
+
+**Decode payloads:**
+
+```swift
+public extension ResourceIndex.Item {
+    func decodePayload<T: Decodable>(
+        _ type: T.Type,
+        decoder: JSONDecoder = .init()
+    ) throws -> T? {
+        guard let payload else { return nil }
+        return try payload.decode(T.self, using: decoder)
+    }
+}
+```
+
+```swift
+for item in index.items {
+    if let preview = try item.decodePayload(ExamplePayload.self) {
+        print(preview.title)
+    }
+}
+```
 
 ---
 
