@@ -103,4 +103,61 @@ struct ResourceIndexTests {
             #expect(error is DecodingError)
         }
     }
+
+    @Test
+    func decodePayload_returnsNil_whenNoPayload() throws {
+        let item = ResourceIndex.Item(
+            id: "item-001",
+            order: 1,
+            target: .init(kind: .resource, ref: "resources/item-001"),
+            payload: nil
+        )
+
+        struct Payload: Decodable { let title: String }
+
+        let decoded = try item.decodePayload(Payload.self)
+        #expect(decoded == nil)
+    }
+
+    @Test
+    func decodePayload_decodes_whenPayloadMatches() throws {
+        let item = ResourceIndex.Item(
+            id: "item-001",
+            order: 1,
+            target: .init(kind: .resource, ref: "resources/item-001"),
+            payload: .object([
+                "title": .string("Hello"),
+                "difficulty": .number(1)
+            ])
+        )
+
+        struct Payload: Decodable, Equatable {
+            let title: String
+            let difficulty: Int
+        }
+
+        let decoded = try item.decodePayload(Payload.self)
+        #expect(decoded == Payload(title: "Hello", difficulty: 1))
+    }
+
+    @Test
+    func decodePayload_throws_whenPayloadMismatches() throws {
+        let item = ResourceIndex.Item(
+            id: "item-001",
+            order: 1,
+            target: .init(kind: .resource, ref: "resources/item-001"),
+            payload: .object([
+                "title": .number(123) // should be String
+            ])
+        )
+
+        struct Payload: Decodable { let title: String }
+
+        do {
+            _ = try item.decodePayload(Payload.self)
+            Issue.record("Expected DecodingError")
+        } catch {
+            #expect(error is DecodingError)
+        }
+    }
 }

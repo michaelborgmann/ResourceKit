@@ -115,6 +115,23 @@ public extension ResourceIndex {
         /// - a category or tags
         /// - a small preview object used for lists
         public let payload: JSONValue?
+        
+        /// Decodes the item's `payload` into a concrete type.
+        ///
+        /// `payload` is stored as a type-erased `JSONValue` to keep
+        /// `ResourceIndex` format-agnostic. This helper allows callers to
+        /// decode that value into a strongly typed model when needed.
+        ///
+        /// - Parameters:
+        ///   - type: The expected payload type.
+        ///   - decoder: The `JSONDecoder` to use. Defaults to a new instance.
+        /// - Returns: The decoded payload, or `nil` if the item has no payload.
+        /// - Throws: A `DecodingError` if the payload exists but does not match
+        ///   the expected type.
+        public func decodePayload<T: Decodable>(_ type: T.Type, decoder: JSONDecoder = .init()) throws -> T? {
+            guard let payload else { return nil }
+            return try payload.decode(T.self, using: decoder)
+        }
     }
     
     /// A reference describing how to locate a resource listed in the index.

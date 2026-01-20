@@ -221,23 +221,7 @@ struct ExamplePayload: Codable {
 **Decode payloads:**
 
 ```swift
-public extension ResourceIndex.Item {
-    func decodePayload<T: Decodable>(
-        _ type: T.Type,
-        decoder: JSONDecoder = .init()
-    ) throws -> T? {
-        guard let payload else { return nil }
-        return try payload.decode(T.self, using: decoder)
-    }
-}
-```
-
-```swift
-for item in index.items {
-    if let preview = try item.decodePayload(ExamplePayload.self) {
-        print(preview.title)
-    }
-}
+let payload = try item.decodePayload(ExamplePayload.self)
 ```
 
 ---
