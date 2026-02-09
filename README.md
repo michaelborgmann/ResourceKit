@@ -21,6 +21,7 @@ Built for modern Swift apps, documented with DocC, and fully tested with Swift T
 * ✅ Tested using Swift's native [`import Testing`](https://developer.apple.com/documentation/swift/testing) framework
 * ✅ Designed to be extensible for additional resource types (audio, images, etc.)
 * ✅ Normalized resource indexing via `ResourceIndex`
++ ✅ Organizing resources using `ResourceCatalog` and `ResourcePackage`
 
 ---
 
@@ -225,6 +226,48 @@ let payload = try item.decodePayload(ExamplePayload.self)
 ```
 
 ---
+
+### 🔹 ResourcePackage
+
+A `ResourcePackage` describes **where a package lives** and **how to resolve resource keys to files**.
+
+#### Example `package.json`
+
+```json
+{
+  "schema": 1,
+  "packageId": "package-identifier",
+  "version": "0.1.0",
+  "path": "path/to/package",
+  "resources": [
+    { "key": "index", "file": "index.json" },
+    { "key": "class/resourceA", "file": "001.json" },
+    { "key": "class/resourceB", "file": "002.json" }
+  ]
+}
+```
+
+Note: The `index` key typically references a `ResourceIndex` file used for previews or lists.
+
+---
+
+### 🔹 ResourceCatalog
+
+A `ResourceCatalog` lists **which packages are available** and where to find them.
+
+#### Example `catalog.json`
+
+```json
+{
+  "schema": 1,
+  "catalogId": "main",
+  "version": "0.1.0",
+  "packages": [
+    { "id": "packageA", "path": "path/to/packageA" },
+    { "id": "packageB", "path": "path/to/packageB" }
+  ]
+}
+```
 
 ## 🧩 Requirements
 
