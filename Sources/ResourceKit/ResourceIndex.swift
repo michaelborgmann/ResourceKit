@@ -31,16 +31,12 @@ import Foundation
 public struct ResourceIndex: Codable, Sendable {
     
     /// Schema version of the index file.
-    ///
-    /// This can be used to support future migrations or compatibility checks.
     public let schema: Int
     
     /// Human-readable title of the resource collection.
     public let title: String
     
     /// Stable identifier for the resource set.
-    ///
-    /// Example: `"my-content-set"`
     public let setId: String
     
     /// Version string of the index contents.
@@ -146,8 +142,6 @@ public extension ResourceIndex {
         public let kind: Kind
         
         /// A reference string interpreted by the resource loading layer.
-        ///
-        /// Example: `"resources/example-001"`
         public let ref: String
         
         /// Creates a new target reference.
